@@ -1,11 +1,29 @@
-
-
-var base = 'https://uphmis.in/portalAPI/';
-// var base = 'http://192.168.0.81:8080/uphmis225/';
+var base = 'https://uphmis.in/uphmis/api/';
 
 var map;
 var tabledata;
 var e;
+var auth;
+
+// Code for Authorization and getting data from storage;
+
+if (sessionStorage.getItem("header") == null) {
+    window.location.href = "https://uphmis.in/Dashboard/index.html";
+} else {
+    if (typeof (Storage) !== "undefined") {
+        auth = sessionStorage.getItem("header");
+    }
+}
+
+
+
+function logout() {
+    if (typeof (Storage) !== "undefined") {
+        sessionStorage.clear();
+        window.location.href = "https://uphmis.in/Dashboard/index.html";
+    }
+}
+
 
 $(document).ready(function () {
 
@@ -22,9 +40,7 @@ $(document).ready(function () {
                 break;
         }
     }
-
     SetOrgunit(indid);
-
 });
 
 
@@ -34,14 +50,28 @@ function SetOrgunit(indid) {
 
     // 1. Organisation Unit group
     $.when(
-        $.getJSON(base + 'organisationUnitGroups/Y6VJukQY7rJ.json?fields=organisationUnits[id,name,code]', {
-            format: "json"
+
+        $.ajax({
+            type: "GET",
+            dataType: "json",
+            contentType: "application/json",
+            headers: {
+                "Authorization": auth
+            },
+            url: base + 'organisationUnitGroups/Y6VJukQY7rJ.json?fields=organisationUnits[id,name,code]',
+            success: function (data) {
+                console.log(data)
+            },
+            error: function (response) {
+                console.log(response)
+            }
         })
     ).then(function (data) {
 
         var organisationUnits = data.organisationUnits;
         organisationUnits.sort(function (a, b) {
-            var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase()
+            var nameA = a.name.toLowerCase(),
+                nameB = b.name.toLowerCase()
             if (nameA < nameB) //sort string ascending
                 return -1
             if (nameA > nameB)
@@ -49,8 +79,7 @@ function SetOrgunit(indid) {
             return 0 //default return value (no sorting)
         });
         $.each(organisationUnits, function (index, item) {
-            $('#orgUnit').append($('<option></option>').val(item.id).html(item.name).text(item.name)
-            );
+            $('#orgUnit').append($('<option></option>').val(item.id).html(item.name).text(item.name));
         });
 
     });
@@ -60,17 +89,21 @@ function SetOrgunit(indid) {
 
 
 function indicator_drop(indid) {
-    
+
     $.ajax({
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'indicatorGroups/' + indid + '.json?fields=id,name,indicators[id,name,code]',
         success: function (data) {
 
             var dataElements = data.indicators;
             dataElements.sort(function (a, b) {
-                var nameA = a.code.toLowerCase(), nameB = b.code.toLowerCase()
+                var nameA = a.code.toLowerCase(),
+                    nameB = b.code.toLowerCase()
                 if (nameA < nameB) //sort string ascending
                     return -1
                 if (nameA > nameB)
@@ -149,8 +182,7 @@ function CreateDashboard() {
         table(indicatorId, orgunitId, date);
         createchart(date, orgunitId, indicatorId, indicatorName);
         // map_UP(indicatorId, orgunitId, date);
-    }
-    else {
+    } else {
         state_Table(indicatorId, orgunitId, date);
         State_createchart(date, orgunitId, indicatorId, indicatorName);
         // State_Map(indicatorId, orgunitId, date, e)
@@ -202,8 +234,7 @@ function CreateDashboard_Drill(params, e) {
     if (orgunitId == "v8EzhiynNtf") {
         table(indicatorId, orgunitId, date);
         createchart(date, orgunitId, indicatorId, indicatorName);
-    }
-    else {
+    } else {
         state_Table(indicatorId, orgunitId, date);
         State_createchart(date, orgunitId, indicatorId, indicatorName);
         // State_Map(indicatorId, orgunitId, date, params);
@@ -222,9 +253,23 @@ function CreateDashboard_Drill(params, e) {
 // Fisrt for Table
 function table(indicatorId, orgunitId, date) {
     $.when(
-        $.getJSON(base + "analytics.json?dimension=dx:" + indicatorId + "&dimension=ou:LEVEL-4;" + orgunitId + "&filter=pe:" + date + "&displayProperty=NAME", {
-            format: "json"
+
+        $.ajax({
+            type: "GET",
+            dataType: "json",
+            contentType: "application/json",
+            headers: {
+                "Authorization": auth
+            },
+            url: base + "analytics.json?dimension=dx:" + indicatorId + "&dimension=ou:LEVEL-4;" + orgunitId + "&filter=pe:" + date + "&displayProperty=NAME",
+            success: function (data) {
+                console.log(data)
+            },
+            error: function (response) {
+                console.log(response)
+            }
         })
+
     ).then(function (response) {
         table_data(response);
         map_UP(indicatorId, orgunitId, date, response);
@@ -261,6 +306,9 @@ function createchart(date, orgunitId, indicatorId, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "analytics.json?dimension=pe:" + date + "&dimension=ou:" + orgunitId + "&filter=dx:" + indicatorId + "&displayProperty=NAME",
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
@@ -271,8 +319,7 @@ function createchart(date, orgunitId, indicatorId, indicatorName) {
             LineChart(orgunit, xaxis, data1, indicatorName);
             columnchart(orgunit, xaxis, data1, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
     piechart(orgunitId, indicatorId, date, indicatorName);
@@ -370,6 +417,9 @@ function piechart(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: "" + base + "analytics.json?dimension=FmDv7glZ1V0:nIVbiyAyRrb;UBuxUMmdz1U;JRLIvJzK4H0;gBerHA2rUH0&dimension=ou:" + orgunitId + "&filter=dx:" + indicatorId + "&filter=pe:" + date + "&displayProperty=NAME",
         success: function (data) {
 
@@ -378,13 +428,15 @@ function piechart(orgunitId, indicatorId, date, indicatorName) {
                 og = data.rows[i][1];
                 factype = data.metaData.items[data.rows[i][0]].name;
                 data1 = parseInt(data.rows[i][2]);
-                seriO = { "name": factype, "y": data1 };
+                seriO = {
+                    "name": factype,
+                    "y": data1
+                };
                 dataSeriesArrO.push(seriO);
             }
             createpie(dataSeriesArrO, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
 }
@@ -435,6 +487,9 @@ function faciltity_Column(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=ou:' + orgunitId + '&dimension=FmDv7glZ1V0:nIVbiyAyRrb;UBuxUMmdz1U;JRLIvJzK4H0;gBerHA2rUH0&filter=dx:' + indicatorId + '&filter=pe:' + date + '&displayProperty=NAME',
         success: function (data) {
 
@@ -445,8 +500,7 @@ function faciltity_Column(orgunitId, indicatorId, date, indicatorName) {
             }
             faciltity_ColumnData(orgunit, xaxis, data1, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
 
@@ -505,6 +559,9 @@ function Piechart1(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=dx:' + indicatorId + '&dimension=ou:LEVEL-3;' + orgunitId + '&filter=pe:' + date + '&displayProperty=NAME',
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
@@ -512,15 +569,18 @@ function Piechart1(orgunitId, indicatorId, date, indicatorName) {
                 xx = data.rows[i][1];
                 factype = data.metaData.items[xx].name;
                 data1 = parseInt(data.rows[i][2]);
-                seriO = { "name": factype, "y": data1 };
+                seriO = {
+                    "name": factype,
+                    "y": data1
+                };
                 dataSeriesArrO.push(seriO);
             }
             createpie1(dataSeriesArrO, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
+
 function createpie1(dataSeriesArrO, indicatorName) {
 
     // Build the chart
@@ -568,6 +628,9 @@ function Divison_Column(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=dx:' + indicatorId + '&dimension=ou:LEVEL-3;' + orgunitId + '&filter=pe:' + date + '&displayProperty=NAME',
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
@@ -576,8 +639,7 @@ function Divison_Column(orgunitId, indicatorId, date, indicatorName) {
             }
             Divison_ColumnData(orgunit, xaxis, data1, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
 
@@ -630,13 +692,15 @@ function map_UP(indicatorId, orgunitId, date, data) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "organisationUnits/" + orgunitId + ".json?fields=id,name,coordinates,children[id,name,coordinates]&paging=false",
         success: function (response) {
             coords = JSON.parse(response.coordinates);
             mapUP_Value(coords, indicatorId, orgunitId, date, data);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -649,6 +713,9 @@ function mapUP_Value(coords, indicatorId, orgunitId, date, data) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "organisationUnits/" + orgunitId + ".json?fields=id,name,coordinates&level=2",
         success: function (response1) {
 
@@ -659,8 +726,7 @@ function mapUP_Value(coords, indicatorId, orgunitId, date, data) {
             }
             MapdataValue(coords, orgunitname, cordinatess, ogid, indicatorId, orgunitId, date, data);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -726,8 +792,7 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
                 "density": datavalue[i],
                 "oid": ogid[i]
             },
-            "geometry":
-            {
+            "geometry": {
                 "type": "Polygon",
                 "coordinates": cordinatess[i][0]
             }
@@ -737,7 +802,10 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
     if (map == 'undefined' || map == null) {
 
-        var mnp = { "type": "FeatureCollection", "features": mp };
+        var mnp = {
+            "type": "FeatureCollection",
+            "features": mp
+        };
 
         map = L.map('mapid').setView([27.3, 80], 5.5);
 
@@ -759,8 +827,8 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
         info.update = function (props) {
             this._div.innerHTML = (props ?
-                '<b>' + props.name + '</b><br />' + props.density + ''
-                : 'Hover over a state');
+                '<b>' + props.name + '</b><br />' + props.density + '' :
+                'Hover over a state');
         };
 
 
@@ -773,10 +841,10 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
         function getColor(d) {
             return d == undefined ? '#00BCD4' :
                 d > legendValues3 ? '#9C27B0' :
-                    d > legendValues3 ? '#008744' :
-                        d > legendValues2 ? '#50B948' :
-                            d > legendValues1 ? '#FFD302' :
-                                '#F85E35';
+                d > legendValues3 ? '#008744' :
+                d > legendValues2 ? '#50B948' :
+                d > legendValues1 ? '#FFD302' :
+                '#F85E35';
         }
 
         function style(feature) {
@@ -828,8 +896,7 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
         }
 
 
-        geojson = L.geoJson(mm, {
-        }).addTo(map);
+        geojson = L.geoJson(mm, {}).addTo(map);
 
         geojson = L.geoJson(mnp, {
             style: style,
@@ -839,7 +906,9 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
 
 
-        var legend = L.control({ position: 'bottomright' });
+        var legend = L.control({
+            position: 'bottomright'
+        });
 
         legend.onAdd = function (map) {
 
@@ -866,14 +935,15 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
         legend.addTo(map);
         $('.loader').css('display', 'none');
-    }
-
-    else {
+    } else {
         if (map != 'undefined' || map != null) {
 
             map.remove();
 
-            var mnp = { "type": "FeatureCollection", "features": mp };
+            var mnp = {
+                "type": "FeatureCollection",
+                "features": mp
+            };
 
 
             map = L.map('mapid').setView([27, 81], 5.5);
@@ -897,8 +967,8 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
             info.update = function (props) {
                 this._div.innerHTML = (props ?
-                    '<b>' + props.name + '</b><br />' + props.density + ''
-                    : 'Hover over a state');
+                    '<b>' + props.name + '</b><br />' + props.density + '' :
+                    'Hover over a state');
             };
 
             info.addTo(map);
@@ -908,10 +978,10 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
             function getColor(d) {
                 return d == undefined ? '#00BCD4' :
                     d > legendValues3 ? '#9C27B0' :
-                        d > legendValues3 ? '#008744' :
-                            d > legendValues2 ? '#50B948' :
-                                d > legendValues1 ? '#FFD302' :
-                                    '#F85E35';
+                    d > legendValues3 ? '#008744' :
+                    d > legendValues2 ? '#50B948' :
+                    d > legendValues1 ? '#FFD302' :
+                    '#F85E35';
             }
 
 
@@ -964,8 +1034,7 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
             }
 
 
-            geojson = L.geoJson(mm, {
-            }).addTo(map);
+            geojson = L.geoJson(mm, {}).addTo(map);
 
             geojson = L.geoJson(mnp, {
                 style: style,
@@ -974,7 +1043,9 @@ function createMap(coords, orgunitname, datavalue, cordinatess, ogid, largest) {
 
 
 
-            var legend = L.control({ position: 'bottomright' });
+            var legend = L.control({
+                position: 'bottomright'
+            });
 
             legend.onAdd = function (map) {
 
@@ -1023,13 +1094,15 @@ function state_Table(indicatorId, orgunitId, date) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "analytics.json?dimension=dx:" + indicatorId + "&dimension=ou:LEVEL-5;" + orgunitId + "&filter=pe:" + date + "&displayProperty=NAME",
         success: function (data) {
             _Stable(data);
             State_Map(indicatorId, orgunitId, date, e, data);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 // function for Creating Table data
@@ -1057,6 +1130,9 @@ function State_createchart(date, orgunitId, indicatorId, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "analytics.json?dimension=pe:" + date + "&dimension=ou:" + orgunitId + "&filter=dx:" + indicatorId + "&displayProperty=NAME",
         success: function (data) {
 
@@ -1069,8 +1145,7 @@ function State_createchart(date, orgunitId, indicatorId, indicatorName) {
             _SLineChart(orgunit, xaxis, data1, indicatorName);
             _SColumnchart(orgunit, xaxis, data1, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
 
@@ -1170,19 +1245,24 @@ function _SPiechart(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=ou:' + orgunitId + '&dimension=FmDv7glZ1V0:nIVbiyAyRrb;UBuxUMmdz1U;JRLIvJzK4H0;gBerHA2rUH0&filter=pe:' + date + '&filter=dx:' + indicatorId + '&displayProperty=NAME',
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
                 var xx = data.rows[i][1];
                 factype = data.metaData.items[xx].name;
                 data1 = parseInt(data.rows[i][2]);
-                seriO = { "name": factype, "y": data1 };
+                seriO = {
+                    "name": factype,
+                    "y": data1
+                };
                 dataSeriesArrO.push(seriO);
             }
             _SCreatepie(dataSeriesArrO, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
     // Piechart
@@ -1232,6 +1312,9 @@ function district_Column(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=ou:' + orgunitId + '&dimension=FmDv7glZ1V0:nIVbiyAyRrb;UBuxUMmdz1U;JRLIvJzK4H0;gBerHA2rUH0&filter=dx:' + indicatorId + '&filter=pe:' + date + '&displayProperty=NAME',
         success: function (data) {
             orgunit = data.metaData.items[orgunitId].name;
@@ -1241,8 +1324,7 @@ function district_Column(orgunitId, indicatorId, date, indicatorName) {
             }
             district_ColumnData(orgunit, xaxis, data1, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 
 }
@@ -1302,6 +1384,9 @@ function Block_Wise(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=dx:' + indicatorId + '&dimension=ou:LEVEL-5;' + orgunitId + '&filter=pe:' + date + ';&displayProperty=NAME',
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
@@ -1309,14 +1394,16 @@ function Block_Wise(orgunitId, indicatorId, date, indicatorName) {
                 xx = data.rows[i][1];
                 factype = data.metaData.items[xx].name;
                 data1 = parseInt(data.rows[i][2]);
-                seriO = { "name": factype, "y": data1 };
+                seriO = {
+                    "name": factype,
+                    "y": data1
+                };
                 dataSeriesArrO.push(seriO);
             }
 
             BlockWise_Pie(dataSeriesArrO, indicatorName);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -1366,6 +1453,9 @@ function Block_Column(orgunitId, indicatorId, date, indicatorName) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + 'analytics.json?dimension=dx:' + indicatorId + '&dimension=ou:LEVEL-5;' + orgunitId + '&filter=pe:' + date + '&displayProperty=NAME',
         success: function (data) {
             for (var i = 0; i < data.rows.length; i++) {
@@ -1375,8 +1465,7 @@ function Block_Column(orgunitId, indicatorId, date, indicatorName) {
             Block_ColumnData(orgunit, xaxis, data1, indicatorName);
 
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -1431,13 +1520,15 @@ function State_Map(indicatorId, orgunitId, date, e, data) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: "" + base + "organisationUnits/" + orgunitId + ".json?fields=id,name,coordinates,children[id,name,coordinates]&paging=false",
         success: function (response) {
             coords = JSON.parse(response.coordinates);
             states_Map(coords, indicatorId, orgunitId, date, e, data)
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -1450,6 +1541,9 @@ function states_Map(coords, indicatorId, orgunitId, date, e, data) {
         type: "GET",
         dataType: "json",
         contentType: "application/json",
+        headers: {
+            "Authorization": auth
+        },
         url: base + "organisationUnits/" + orgunitId + ".json?fields=id,name,coordinates&level=1",
 
         success: function (response1) {
@@ -1458,17 +1552,19 @@ function states_Map(coords, indicatorId, orgunitId, date, e, data) {
                 orgunitname.push(response1.organisationUnits[i].name);
                 ogid.push(response1.organisationUnits[i].id);
                 if (response1.organisationUnits[i].coordinates == 'undefined' || response1.organisationUnits[i].coordinates == null) {
-                    cordinatess.push([[[]]]);
-                }
-                else {
+                    cordinatess.push([
+                        [
+                            []
+                        ]
+                    ]);
+                } else {
                     cordinatess.push(JSON.parse(response1.organisationUnits[i].coordinates));
                 }
             }
 
             State_MapDV(coords, orgunitname, cordinatess, ogid, indicatorId, orgunitId, date, e, data);
         },
-        error: function (response) {
-        }
+        error: function (response) {}
     });
 }
 
@@ -1486,8 +1582,8 @@ function State_MapDV(coords, orgunitname, cordinatess, ogid, indicatorId, orguni
             var largest = parseInt(datavalue[i]);
         }
     }
-            _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest);
-            $('.loader').css('display', 'none');
+    _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest);
+    $('.loader').css('display', 'none');
 }
 
 
@@ -1517,8 +1613,7 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
     if (e == undefined) {
         var lat = finalLatLong[1];
         var long = finalLatLong[0];
-    }
-    else {
+    } else {
         var lat = e.latlng.lat;
         var long = e.latlng.lng;
     }
@@ -1545,8 +1640,7 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
                 "name": orgunitname[i],
                 "density": datavalue[i]
             },
-            "geometry":
-            {
+            "geometry": {
                 "type": "Polygon",
                 "coordinates": cordinatess[i][0]
             }
@@ -1559,7 +1653,10 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         // map.remove();
 
 
-        var mnp = { "type": "FeatureCollection", "features": mp };
+        var mnp = {
+            "type": "FeatureCollection",
+            "features": mp
+        };
 
         map = L.map('mapid').setView([lat, long], 12);
 
@@ -1581,8 +1678,8 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
 
         info.update = function (props) {
             this._div.innerHTML = (props ?
-                '<b>' + props.name + '</b><br />' + props.density + ''
-                : 'Hover over a state');
+                '<b>' + props.name + '</b><br />' + props.density + '' :
+                'Hover over a state');
         };
 
         info.addTo(map);
@@ -1592,10 +1689,10 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         function getColor(d) {
             return d == undefined ? '#00BCD4' :
                 d > legendValues3 ? '#9C27B0' :
-                    d > legendValues3 ? '#008744' :
-                        d > legendValues2 ? '#50B948' :
-                            d > legendValues1 ? '#FFD302' :
-                                '#F85E35';
+                d > legendValues3 ? '#008744' :
+                d > legendValues2 ? '#50B948' :
+                d > legendValues1 ? '#FFD302' :
+                '#F85E35';
         }
 
         function style(feature) {
@@ -1648,8 +1745,7 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
 
 
 
-        geojson = L.geoJson(mm, {
-        }).addTo(map);
+        geojson = L.geoJson(mm, {}).addTo(map);
 
         geojson = L.geoJson(mnp, {
             style: style,
@@ -1660,7 +1756,9 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
             padding: [10, 10]
         });
         // Back Button
-        var Button = L.control({ position: 'bottomleft' });
+        var Button = L.control({
+            position: 'bottomleft'
+        });
 
         Button.onAdd = function (map) {
             var div = L.DomUtil.create('div');
@@ -1671,7 +1769,9 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         /***End of Back Button */
 
 
-        var legend = L.control({ position: 'bottomright' });
+        var legend = L.control({
+            position: 'bottomright'
+        });
 
         legend.onAdd = function (map) {
 
@@ -1700,13 +1800,15 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         legend.addTo(map);
 
         // $('.loader').css('display', 'none');
-    }
-    else {
+    } else {
         if (map != 'undefined' || map == null) {
             map.remove();
         }
 
-        var mnp = { "type": "FeatureCollection", "features": mp };
+        var mnp = {
+            "type": "FeatureCollection",
+            "features": mp
+        };
         map = L.map('mapid').setView([lat, long], 12);
 
         L.tileLayer('?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -1726,8 +1828,8 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
 
         info.update = function (props) {
             this._div.innerHTML = (props ?
-                '<b>' + props.name + '</b><br />' + props.density + ''
-                : 'Hover over a state');
+                '<b>' + props.name + '</b><br />' + props.density + '' :
+                'Hover over a state');
         };
 
         info.addTo(map);
@@ -1737,10 +1839,10 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         function getColor(d) {
             return d == undefined ? '#00BCD4' :
                 d > legendValues3 ? '#9C27B0' :
-                    d > legendValues3 ? '#008744' :
-                        d > legendValues2 ? '#50B948' :
-                            d > legendValues1 ? '#FFD302' :
-                                '#F85E35';
+                d > legendValues3 ? '#008744' :
+                d > legendValues2 ? '#50B948' :
+                d > legendValues1 ? '#FFD302' :
+                '#F85E35';
         }
 
 
@@ -1791,8 +1893,7 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
             });
         }
 
-        geojson = L.geoJson(mm, {
-        }).addTo(map);
+        geojson = L.geoJson(mm, {}).addTo(map);
 
         geojson = L.geoJson(mnp, {
             style: style,
@@ -1803,7 +1904,9 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
             padding: [10, 10]
         });
         // Back Button
-        var Button = L.control({ position: 'bottomleft' });
+        var Button = L.control({
+            position: 'bottomleft'
+        });
 
         Button.onAdd = function (map) {
             var div = L.DomUtil.create('div');
@@ -1813,7 +1916,9 @@ function _SCreateMap(coords, orgunitname, datavalue, cordinatess, e, largest) {
         Button.addTo(map);
         /***End of Back Button */
 
-        var legend = L.control({ position: 'bottomright' });
+        var legend = L.control({
+            position: 'bottomright'
+        });
 
         legend.onAdd = function (map) {
 
